@@ -79,7 +79,7 @@ if(file==NULL)
 
     gettimeofday(&start,0);
     struct ipheader *ip = (struct ipheader *)(packet + sizeof(struct ethheader));
-    tcphdr= (struct tcphdr*)(packet + sizeof(struct ipheader)+ +sizeof(struct ethheader));
+    tcphdr= (struct tcphdr*)(packet + ip->iph_ihl*4+ +sizeof(struct ethheader));
     apphdr= (struct app_header*)packet+sizeof(struct ethheader)+ip->iph_ihl*4+tcphdr->doff*4;
     /* determine protocol */
     switch (ip->iph_protocol)
@@ -87,9 +87,8 @@ if(file==NULL)
     case IPPROTO_TCP:
 
       printf("   Protocol: TCP\n");
-      gettimeofday(&start,0);
-      struct ipheader *ip = (struct ipheader *)(packet + sizeof(struct ethheader));
-      tcphdr= (struct tcphdr*)(packet + sizeof(struct ipheader)+ +sizeof(struct ethheader));
+      
+    
     
       fprintf(file,"                        TCP header\n");
       fprintf(file,"**********************************************************************\n");
@@ -97,9 +96,13 @@ if(file==NULL)
       fprintf(file,"           dest_ip: %s\n", inet_ntoa(ip->iph_destip));
       fprintf(file,"           source_port: %hu\n",ntohs(tcphdr->source));
       fprintf(file,"           dst_port: %hu\n",ntohs(tcphdr->dest));
-      fprintf(file,"           timestap: %u (%s)\n",ntohl(header->ts.tv_sec),buf);
-      fprintf(file,"           total_length:%u \n",ntohs(header->len));
-      fprintf(file,"           cache_flag: %u \n",(apphdr->c_flag));
+      fprintf(file,"           timestap: %d (%s)\n",(apphdr->unixtime),buf);
+      fprintf(file,"           total_length:%u \n",ntohs(apphdr->length));
+      fprintf(file,"           cache_flag: %u \n",(apphdr->flags>>12) & 1);
+      fprintf(file,"           step_flag: %u \n",(apphdr->flags>>11) & 1);
+      fprintf(file,"           type_flag: %u \n",(apphdr->flags>>10) & 1);
+      fprintf(file,"           status_code: %u \n",apphdr->status);
+      fprintf(file,"           cache_control:%u \n",ntohs(apphdr->cache));
       fprintf(file,"**********************************************************************\n");
       fclose(file);
     
