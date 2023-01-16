@@ -103,6 +103,7 @@ if(file==NULL)
       fprintf(file,"           type_flag: %u \n",(apphdr->flags>>10) & 1);
       fprintf(file,"           status_code: %u \n",apphdr->status);
       fprintf(file,"           cache_control:%u \n",ntohs(apphdr->cache));
+      fprintf(file,"           data: \n");
       fprintf(file,"**********************************************************************\n");
       fclose(file);
     
