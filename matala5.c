@@ -5,6 +5,7 @@
 #include <net/ethernet.h>
 #include <netinet/tcp.h>
 #include <time.h>
+#include <unistd.h>
 #define SIZE_ETHERNET 14
 struct ethheader
 {
@@ -29,6 +30,21 @@ struct ipheader
   struct in_addr iph_destip;       // Destination IP address
 };
 
+struct app_header
+{
+    uint32_t unixtime;
+    uint16_t length;
+
+    union
+    {
+        uint16_t flags;
+        uint16_t _:3, c_flag:1, s_flag:1, t_flag:1, status:10;
+    };
+    
+    uint16_t cache;
+    uint16_t __;
+};
+
 
 
 void got_packet(u_char *args, const struct pcap_pkthdr *header,
@@ -36,7 +52,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header,
 {
 
 FILE *file;
-file=fopen("213861529_209321553.txt","a");
+file=fopen("213861529_209321553.txt","a+");
 if(file==NULL)
 {
   printf("unable to create file");
@@ -47,8 +63,15 @@ if(file==NULL)
   
   struct ethheader *eth = (struct ethheader *)packet;
   struct timeval start,finish;
+  struct app_header *apphdr;
+
   
-  
+  time_t rawtime=header->ts.tv_sec;
+  struct tm date;
+  char buf[80];
+
+  date=*localtime(&rawtime);
+  strftime(buf,sizeof(buf),"%a %d-%m-%Y %H:%M:%S",&date);
   
   
   if (ntohs(eth->ether_type) == 0x0800)
@@ -57,19 +80,29 @@ if(file==NULL)
     gettimeofday(&start,0);
     struct ipheader *ip = (struct ipheader *)(packet + sizeof(struct ethheader));
     tcphdr= (struct tcphdr*)(packet + sizeof(struct ipheader)+ +sizeof(struct ethheader));
-    fprintf(file,"           source_ip: %s\n", inet_ntoa(ip->iph_sourceip));
-    fprintf(file,"           dest_ip: %s\n", inet_ntoa(ip->iph_destip));
-    fprintf(file,"           source_port: %d\n",ntohs(tcphdr->source));
-    fprintf(file,"           dst_port: %d\n",ntohs(tcphdr->dest));
-    fprintf(file,"           timestap: %ld \n",header->ts.tv_sec);
-    
-
-
+    apphdr= (struct app_header*)packet+sizeof(struct ethheader)+ip->iph_ihl*4+tcphdr->doff*4;
     /* determine protocol */
     switch (ip->iph_protocol)
     {
     case IPPROTO_TCP:
+
       printf("   Protocol: TCP\n");
+      gettimeofday(&start,0);
+      struct ipheader *ip = (struct ipheader *)(packet + sizeof(struct ethheader));
+      tcphdr= (struct tcphdr*)(packet + sizeof(struct ipheader)+ +sizeof(struct ethheader));
+    
+      fprintf(file,"                        TCP header\n");
+      fprintf(file,"**********************************************************************\n");
+      fprintf(file,"           source_ip: %s\n", inet_ntoa(ip->iph_sourceip));
+      fprintf(file,"           dest_ip: %s\n", inet_ntoa(ip->iph_destip));
+      fprintf(file,"           source_port: %hu\n",ntohs(tcphdr->source));
+      fprintf(file,"           dst_port: %hu\n",ntohs(tcphdr->dest));
+      fprintf(file,"           timestap: %u (%s)\n",ntohl(header->ts.tv_sec),buf);
+      fprintf(file,"           total_length:%u \n",ntohs(header->len));
+      fprintf(file,"           cache_flag: %u \n",(apphdr->c_flag));
+      fprintf(file,"**********************************************************************\n");
+      fclose(file);
+    
       return;
     case IPPROTO_UDP:
       printf("   Protocol: UDP\n");
