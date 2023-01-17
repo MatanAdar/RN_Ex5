@@ -95,7 +95,7 @@ void send_raw_ip_packet(struct ipheader *ip)
 /******************************************************************
   Spoof an ICMP echo request using an arbitrary source IP Address
 *******************************************************************/
-int main()
+void spooficmp()
 {
   char buffer[1500];
 
@@ -119,8 +119,8 @@ int main()
   ip->iph_ver = 4;
   ip->iph_ihl = 5;
   ip->iph_ttl = 20;
-  ip->iph_sourceip.s_addr = inet_addr("10.2.2.5");
-  ip->iph_destip.s_addr = inet_addr("8.8.8.8");
+  ip->iph_sourceip.s_addr = inet_addr("1.2.3.4");
+  ip->iph_destip.s_addr = inet_addr("10.2.2.5");
   ip->iph_protocol = IPPROTO_ICMP;
   ip->iph_len = htons(sizeof(struct ipheader) +
                       sizeof(struct icmpheader));
@@ -130,68 +130,75 @@ int main()
    ********************************************************/
   send_raw_ip_packet(ip);
 
-  return 0;
+  
 }
 
 // /**********************************************
-//  * Listing 12.7: Constructing raw UDP packet
+//   Constructing raw UDP packet
 //  **********************************************/
 
-// #include <string.h>
-// #include <sys/socket.h>
-// #include <netinet/ip.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/ip.h>
 
-// /* UDP Header */
-// struct udpheader
-// {
-//   u_int16_t udp_sport; /* source port */
-//   u_int16_t udp_dport; /* destination port */
-//   u_int16_t udp_ulen;  /* udp length */
-//   u_int16_t udp_sum;   /* udp checksum */
-// };
+/* UDP Header */
+struct udpheader
+{
+  u_int16_t udp_sport; /* source port */
+  u_int16_t udp_dport; /* destination port */
+  u_int16_t udp_ulen;  /* udp length */
+  u_int16_t udp_sum;   /* udp checksum */
+};
 
-// /******************************************************************
-//   Spoof a UDP packet using an arbitrary source IP Address and port
-// *******************************************************************/
-// int main()
-// {
-//   char buffer[1500];
+/******************************************************************
+  Spoof a UDP packet using an arbitrary source IP Address and port
+*******************************************************************/
+ void spoofudp()
+{
+  char buffer[1500];
 
-//   memset(buffer, 0, 1500);
-//   struct ipheader *ip = (struct ipheader *)buffer;
-//   struct udpheader *udp = (struct udpheader *)(buffer +
-//                                                sizeof(struct ipheader));
+  memset(buffer, 0, 1500);
+  struct ipheader *ip = (struct ipheader *)buffer;
+  struct udpheader *udp = (struct udpheader *)(buffer +
+                                               sizeof(struct ipheader));
 
-//   /*********************************************************
-//      Step 1: Fill in the UDP data field.
-//    ********************************************************/
-//   char *data = buffer + sizeof(struct ipheader) +
-//                sizeof(struct udpheader);
-//   const char *msg = "Hello Server!\n";
-//   int data_len = strlen(msg);
-//   strncpy(data, msg, data_len);
+  /*********************************************************
+     Step 1: Fill in the UDP data field.
+   ********************************************************/
+  char *data = buffer + sizeof(struct ipheader) +
+               sizeof(struct udpheader);
+  const char *msg = "Hello Server!\n";
+  int data_len = strlen(msg);
+  strncpy(data, msg, data_len);
 
-//   /*********************************************************
-//      Step 2: Fill in the UDP header.
-//    ********************************************************/
-//   udp->udp_sport = htons(12345);
-//   udp->udp_dport = htons(9090);
-//   udp->udp_ulen = htons(sizeof(struct udpheader) + data_len);
-//   udp->udp_sum = 0; /* Many OSes ignore this field, so we do not
-//                        calculate it. */
+  /*********************************************************
+     Step 2: Fill in the UDP header.
+   ********************************************************/
+  udp->udp_sport = htons(12345);
+  udp->udp_dport = htons(9090);
+  udp->udp_ulen = htons(sizeof(struct udpheader) + data_len);
+  udp->udp_sum = 0; /* Many OSes ignore this field, so we do not
+                       calculate it. */
 
-//   /*********************************************************
-//      Step 3: Fill in the IP header.
-//    ********************************************************/
+  /*********************************************************
+     Step 3: Fill in the IP header.
+   ********************************************************/
+        ip->iph_ver = 4;
+        ip->iph_ihl = 5;
+        ip->iph_ttl = 20;
+        ip->iph_sourceip.s_addr = inet_addr("1.2.3.4");
+        ip->iph_destip.s_addr = inet_addr("10.2.2.5");
+        ip->iph_protocol = IPPROTO_UDP; // The value is 17.   
+        ip->iph_len = htons(sizeof(struct ipheader) + sizeof(struct udpheader) + data_len);
 
-//                               /* Code omitted here; same as that in (*@Listing~\ref{snoof:list:icmpecho}@*) */
-//       ip->iph_protocol = IPPROTO_UDP; // The value is 17.   
-//       ip->iph_len = htons(sizeof(struct ipheader) + sizeof(struct udpheader) + data_len);
+  /*********************************************************
+     Step 4: Finally, send the spoofed packet
+   ********************************************************/
+  send_raw_ip_packet(ip);
+}
 
-//   /*********************************************************
-//      Step 4: Finally, send the spoofed packet
-//    ********************************************************/
-//   send_raw_ip_packet(ip);
-
-//   return 0;
-// }
+int main()
+{
+    spoofudp();
+    return 0;
+}
