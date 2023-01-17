@@ -32,7 +32,7 @@ struct ipheader
 
 struct app_header
 {
-    uint32_t unixtime;
+    uint32_t timestamp;
     uint16_t length;
 
     union
@@ -62,7 +62,7 @@ if(file==NULL)
   struct tcphdr *tcphdr;
   
   struct ethheader *eth = (struct ethheader *)packet;
-  struct timeval start,finish;
+
   struct app_header *apphdr;
 
   
@@ -77,10 +77,11 @@ if(file==NULL)
   if (ntohs(eth->ether_type) == 0x0800)
   { // 0x0800 is IP type
 
-    gettimeofday(&start,0);
     struct ipheader *ip = (struct ipheader *)(packet + sizeof(struct ethheader));
-    tcphdr= (struct tcphdr*)(packet + ip->iph_ihl*4+ +sizeof(struct ethheader));
-    apphdr= (struct app_header*)packet+sizeof(struct ethheader)+ip->iph_ihl*4+tcphdr->doff*4;
+    unsigned short iphdrlen = (ip->iph_ihl)*4;
+    tcphdr= (struct tcphdr*)(packet + iphdrlen+ +sizeof(struct ethheader));
+    unsigned int data_offset = (tcphdr->th_off)* 4;
+    apphdr= (struct app_header*)packet+sizeof(struct ethheader)+iphdrlen+tcphdr->doff*4;
     /* determine protocol */
     switch (ip->iph_protocol)
     {
@@ -96,7 +97,7 @@ if(file==NULL)
       fprintf(file,"           dest_ip: %s\n", inet_ntoa(ip->iph_destip));
       fprintf(file,"           source_port: %hu\n",ntohs(tcphdr->source));
       fprintf(file,"           dst_port: %hu\n",ntohs(tcphdr->dest));
-      fprintf(file,"           timestap: %d (%s)\n",(apphdr->unixtime),buf);
+      fprintf(file,"           timestap: %u (%s)\n",ntohl(apphdr->timestamp),buf);
       fprintf(file,"           total_length:%u \n",ntohs(apphdr->length));
       fprintf(file,"           cache_flag: %u \n",(apphdr->flags>>12) & 1);
       fprintf(file,"           step_flag: %u \n",(apphdr->flags>>11) & 1);
@@ -104,6 +105,28 @@ if(file==NULL)
       fprintf(file,"           status_code: %u \n",apphdr->status);
       fprintf(file,"           cache_control:%u \n",ntohs(apphdr->cache));
       fprintf(file,"           data: \n");
+      
+      u_char * data = (u_char * )(packet + sizeof(struct ethheader)+iphdrlen+ data_offset+ sizeof(apphdr));
+      unsigned int data_size = ntohs(ip->iph_len) - (iphdrlen + data_offset);
+
+      if(data_size>0)
+      {
+        for(int i=0;i<data_size;i++)
+        {
+          if(!(i & 15))
+          {
+            fprintf(file,"\n %04X: ",i);
+          }
+          fprintf(file,"%02X: ",((unsigned char*)data)[i]);
+          
+        }
+      }
+      else
+      {
+        fprintf(file,"                     dont receive any data!");
+      }
+      fprintf(file,"\n");
+      fprintf(file,"%s",data);
       fprintf(file,"**********************************************************************\n");
       fclose(file);
     
