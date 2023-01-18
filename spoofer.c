@@ -119,8 +119,8 @@ void spoofIcmp ()
   ip->iph_ver = 4;
   ip->iph_ihl = 5;
   ip->iph_ttl = 20;
-  ip->iph_sourceip.s_addr = inet_addr("10.0.2.15");
-  ip->iph_destip.s_addr = inet_addr("8.8.8.8");
+  ip->iph_sourceip.s_addr = inet_addr("1.2.3.4");
+  ip->iph_destip.s_addr = inet_addr("10.0.2.15");
   ip->iph_protocol = IPPROTO_ICMP;
   ip->iph_len = htons(sizeof(struct ipheader) +
                       sizeof(struct icmpheader));
@@ -294,6 +294,6 @@ void spoofTcp()
 /******************************************************************************/
 int main()
 {
-  spoofTcp();
+  spoofIcmp();
   return 0;
 }
