@@ -95,7 +95,7 @@ void send_raw_ip_packet(struct ipheader *ip)
 /******************************************************************
   Spoof an ICMP echo request using an arbitrary source IP Address
 *******************************************************************/
-void spooficmp()
+void spoofIcmp ()
 {
   char buffer[1500];
 
@@ -119,8 +119,8 @@ void spooficmp()
   ip->iph_ver = 4;
   ip->iph_ihl = 5;
   ip->iph_ttl = 20;
-  ip->iph_sourceip.s_addr = inet_addr("1.2.3.4");
-  ip->iph_destip.s_addr = inet_addr("10.2.2.5");
+  ip->iph_sourceip.s_addr = inet_addr("10.0.2.15");
+  ip->iph_destip.s_addr = inet_addr("8.8.8.8");
   ip->iph_protocol = IPPROTO_ICMP;
   ip->iph_len = htons(sizeof(struct ipheader) +
                       sizeof(struct icmpheader));
@@ -129,6 +129,7 @@ void spooficmp()
      Step 3: Finally, send the spoofed packet
    ********************************************************/
   send_raw_ip_packet(ip);
+  
 
   
 }
@@ -197,8 +198,102 @@ struct udpheader
   send_raw_ip_packet(ip);
 }
 
+
+#include <netinet/tcp.h>
+
+/* Psuedo TCP header */
+  struct pseudo_tcp
+  {
+    unsigned saddr, daddr;
+    unsigned char mbz;
+    unsigned char ptcl;
+    unsigned short tcpl;
+    struct tcphdr tcp;
+    char payload[1500];
+  };
+
+
+
+ unsigned short calculate_tcp_checksum(struct ipheader * ip)
+  {
+    struct tcpheader *tcp = (struct tcpheader *)((u_char *)ip +
+                                                 sizeof(struct ipheader));
+
+    int tcp_len = ntohs(ip->iph_len) - sizeof(struct ipheader);
+
+    /* pseudo tcp header for the checksum computation */
+    struct pseudo_tcp p_tcp;
+    memset(&p_tcp, 0x0, sizeof(struct pseudo_tcp));
+
+    p_tcp.saddr = ip->iph_sourceip.s_addr;
+    p_tcp.daddr = ip->iph_destip.s_addr;
+    p_tcp.mbz = 0;
+    p_tcp.ptcl = IPPROTO_TCP;
+    p_tcp.tcpl = htons(tcp_len);
+    memcpy(&p_tcp.tcp, tcp, tcp_len);
+
+    return (unsigned short)in_cksum((unsigned short *)&p_tcp,
+                                    tcp_len + 12);
+  }
+
+void spoofTcp()
+{
+  
+  char buffer[1500];
+  memset(buffer, 0, 1500);
+  struct ipheader *ip = (struct ipheader *)buffer;
+  struct tcphdr *tcp=(struct tcphdr*)(buffer+sizeof(struct ipheader));
+
+
+
+  /*********************************************************
+     Step 1: Fill in the TCP data field.
+   ********************************************************/
+  char *data = buffer + sizeof(struct ipheader) +
+               sizeof(struct tcphdr);
+  const char *msg = "Hello Server!\n";
+  int data_len = strlen(msg);
+  strncpy(data, msg, data_len);
+
+/*********************************************************
+      Step 2: Fill in the TCP header.
+ ********************************************************/
+
+
+    tcp->th_sport= htons(1234);
+    tcp->th_dport = htons(5678);
+    tcp->th_seq = htonl(0);
+    tcp->th_ack = htonl(13);
+    //tcp->th_off = 0x50;
+    tcp->th_flags = 0x018;
+    tcp->th_win = htons(2000);
+    tcp->th_sum = 0;
+
+
+  /*********************************************************
+      Step 3: Fill in the IP header.
+    ********************************************************/
+
+    ip->iph_ver = 4;
+    ip->iph_ihl = 5;
+    ip->iph_ttl = 20;
+    ip->iph_sourceip.s_addr = inet_addr("10.0.2.15");
+    ip->iph_destip.s_addr = inet_addr("8.8.8.8");
+    ip->iph_protocol = IPPROTO_TCP;
+    ip->iph_len = htons(sizeof(struct ipheader) + sizeof(struct tcphdr) + data_len);
+
+    tcp->th_sum = calculate_tcp_checksum(ip);
+    /*********************************************************
+     Step 4: Finally, send the spoofed packet
+   ********************************************************/
+  send_raw_ip_packet(ip);
+
+}
+
+
+/******************************************************************************/
 int main()
 {
-    spoofudp();
-    return 0;
+  spoofTcp();
+  return 0;
 }
