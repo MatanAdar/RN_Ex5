@@ -35,13 +35,13 @@ struct ipheader
 //Application Header
 struct app_header
 {
-  uint32_t timestamp;              
+  uint32_t timestamp;             //the time that the packet was sent
   uint16_t length;                //total length of the packet
 
   union                          // all the flags and the status is in here and we taking specific bytes to each flag
   {
     uint16_t flags;
-    uint16_t _ : 3, c_flag : 1, s_flag : 1, t_flag : 1, status : 10;   //The status code of the response
+    uint16_t _ : 3, c_flag : 1, s_flag : 1, t_flag : 1, status : 10;   //the status code of the response
   };
 
   uint16_t cache;                //'Max-Age' value for the cache.
