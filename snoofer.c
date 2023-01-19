@@ -43,7 +43,6 @@ unsigned short in_cksum(unsigned short *buf, int length)
     return (unsigned short)(~sum);
   }
 
-
 /* Ethernet header */
 struct ethheader
 {
@@ -171,9 +170,10 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header,
         strncpy(data, msg, data_len);
 
      // Step 3: Construct the icmp Header
-        newicmp->icmp_chksum=in_cksum((unsigned short *)newicmp,
-                               sizeof(struct icmpheader));
+        
         newicmp->icmp_type=0;
+        newicmp->icmp_chksum = 0;
+        newicmp->icmp_chksum = in_cksum((unsigned short *)newicmp,sizeof(struct icmpheader)+data_len);
 
       // Step 4: Construct the IP header (no change for other fields)
     newip->iph_sourceip = ip->iph_destip;
