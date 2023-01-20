@@ -26,15 +26,14 @@ int main(int argc, char **argv) {
     }
     printf("socket_port created successfully!\n");
 
-    // setup Server address structure with port 12000 
+    // setup Server address structure with port 9998
     struct sockaddr_in serverAddress;
     memset((char *)&serverAddress, 0, sizeof(serverAddress));
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(PORT); // using port 9998
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-    socklen_t serverAddressLen=sizeof(serverAddress);
     
-    // create another socket to send with port 12001
+    // create another socket to send with port 9999
     int socket_port_plus1 = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (socket_port_plus1 == -1) {
         printf("Could not create socket : %d\n", errno);
@@ -44,7 +43,7 @@ int main(int argc, char **argv) {
     }
     printf("socket_port_plus1 created successfully!\n");
 
-    // Initialize outgoing socket address with port 12001 - to send
+    // Initialize outgoing socket address with port 9999 - to send
     struct sockaddr_in socket_p1;
     memset(&socket_p1, 0, sizeof(socket_p1));
     socket_p1.sin_family = AF_INET;
@@ -123,6 +122,7 @@ int main(int argc, char **argv) {
                 }
             }
         }
+        printf("\n");
     }
 
     //closing sockets
