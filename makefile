@@ -3,19 +3,20 @@ CC=gcc
 FLAGS= -Wall -g
 AR=ar
 
-Sniffer.o: Sniffer.c
-	$(CC) -c Sniffer.c -lpcap
+sniffer: Sniffer.c
+	gcc -o sniffer Sniffer.c -lpcap
 
-Gateway.o: Gateway.c
-	$(CC) -c $(FLAGS) Gateway.c
+spoofer: Spoofer.c
+	gcc -o spoofer Spoofer.c
 
-sniffer: Sniffer.o
-	gcc -Wall Sniffer.o -o sniffer -lpcap
+snoofer: Snoofer.c
+	gcc -o snoofer Snoofer.c -lpcap
 
-gateway: Gateway.o
-	gcc -Wall Gateway.o -o gateway 
+gateway: Gateway.c
+	gcc -o gateway Gateway.c
 
-all: sniffer gateway 
+
+all: sniffer spoofer snoofer gateway 
 
 clean:
-	rm -rf *.o sniffer gateway
+	rm -rf sniffer spoofer snoofer gateway

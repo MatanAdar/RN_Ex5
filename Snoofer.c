@@ -140,8 +140,11 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header,
     case IPPROTO_ICMP:
     {
 
+
+    
+
       printf("   Protocol: ICMP\n");
-      /*SPOOFING TIME*/
+      /*SPOOFING TIME BABY*/
       const char buffer[1500];
       int ip_header_len = ip->iph_ihl * 4;
       struct icmpheader *icmp =(struct icmpheader *)((u_char *)ip +
@@ -157,9 +160,9 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header,
       // Step 1: Make a copy from the original packet  
       memset((char *)buffer, 0, 1500);
       memcpy((char *)buffer, ip, ntohs(ip->iph_len));
-      struct ipheader *newip = (struct ipheader *)buffer; // creating the new ip header
-      struct icmpheader *newicmp= (struct icmpheader *)(buffer+ip_header_len); // creating new icmpheader 
-      char *data = (char *)newicmp + sizeof(struct icmpheader); 
+      struct ipheader *newip = (struct ipheader *)buffer;
+      struct icmpheader *newicmp= (struct icmpheader *)(buffer+ip_header_len);
+      char *data = (char *)newicmp + sizeof(struct icmpheader);
 
       // Step 2: Construct the icmp payload, keep track of payload size
         const char *msg = "This is a spoofed reply!\n";
@@ -168,8 +171,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header,
 
      // Step 3: Construct the icmp Header
         
-        newicmp->icmp_type=0; // switching to reply type
-        newicmp->icmp_chksum = 0; // reseting the cheksum
+        newicmp->icmp_type=0;
+        newicmp->icmp_chksum = 0;
         newicmp->icmp_chksum = in_cksum((unsigned short *)newicmp,sizeof(struct icmpheader)+data_len);
 
       // Step 4: Construct the IP header (no change for other fields)
