@@ -1,7 +1,4 @@
 .PHONY: clean all
-CC=gcc
-FLAGS= -Wall -g
-AR=ar
 
 sniffer: Sniffer.c
 	gcc -o sniffer Sniffer.c -lpcap
